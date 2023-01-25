@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "metamagic"
+  site-url: "https://professorwug.github.io/metamagic"
+  description: "Metaphor generation via knowledge graphs and LLMs"
+  repo-branch: main
+  repo-url: "https://github.com/professorwug/metamagic"

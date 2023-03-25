@@ -1,0 +1,79 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "metamagic",
+    "section": "",
+    "text": "Home to the graph-matching GNN and metaphor describing LLM."
+  },
+  {
+    "objectID": "index.html#install",
+    "href": "index.html#install",
+    "title": "metamagic",
+    "section": "Install",
+    "text": "Install\npip install metamagic"
+  },
+  {
+    "objectID": "index.html#how-to-use",
+    "href": "index.html#how-to-use",
+    "title": "metamagic",
+    "section": "How to use",
+    "text": "How to use\nFill me in please! Don’t forget code examples:\n\n\n\n2\n\n\n\n1+2\n\n3"
+  },
+  {
+    "objectID": "core.html",
+    "href": "core.html",
+    "title": "core",
+    "section": "",
+    "text": "source\n\nfoo\n\n foo ()"
+  },
+  {
+    "objectID": "01-mat-model-of-language-embeddings.html",
+    "href": "01-mat-model-of-language-embeddings.html",
+    "title": "MAT, Modeled with Word Embeddings",
+    "section": "",
+    "text": "# read a text file into a an array, in which each element is a line of the file\ndef read_file(filename):\n    with open(filename, 'r') as f:\n        return f.read().splitlines()\nreal_metaphors = read_file('../data/metaphor_concepts.txt')[1:] # skip the header\nfake_metaphors = read_file('../data/random_concepts.txt')[1:] # skip the header"
+  },
+  {
+    "objectID": "01-mat-model-of-language-embeddings.html#using-hugging-face-transformers",
+    "href": "01-mat-model-of-language-embeddings.html#using-hugging-face-transformers",
+    "title": "MAT, Modeled with Word Embeddings",
+    "section": "Using “Hugging Face” Transformers",
+    "text": "Using “Hugging Face” Transformers\nWe’ll start with the simplest model, BERT. If this doesn’t work, we may be able to step things up into a GPT or LlaMMa type model.\n\n# create embeddings of each of these concepts, for downstream processing, using the huggingface transformers library\n# from transformers import AutoTokenizer, AutoModel\n# tokenizer = AutoTokenizer.from_pretrained(\"bert-base-uncased\")\n# model = AutoModel.from_pretrained(\"bert-base-uncased\")\n\n\n# concept_tokens = [tokenizer(c, padding=True, return_tensors=\"pt\") for c in concept_lists] # return tensors for pytorch\n# concept_embeddings = [model(**c) for c in concept_tokens]"
+  },
+  {
+    "objectID": "01-mat-model-of-language-embeddings.html#using-sentence-transformers",
+    "href": "01-mat-model-of-language-embeddings.html#using-sentence-transformers",
+    "title": "MAT, Modeled with Word Embeddings",
+    "section": "Using Sentence Transformers",
+    "text": "Using Sentence Transformers\nThe sentence-transformers library is an extension of the hugging-face transformers library, designed explicitly for inference and manipulation of the embedding vectors. There are a number of models available, with varying tradeoffs between speed and quality; we’ll begin with the fastest, and, if the downstream tasks don’t work, will increase the computation.\nThe library’s homepage declares that its models are “state of the art”. While it can’t replicate ChatGPT-4, it seems reasonable that for the much more modest task of embedding a couple of words based on contextual similarity to other words, it may match state of the art.\nHere, each sentence is encoded into a 384-dimensional vector.\n\nfrom sentence_transformers import SentenceTransformer\nmodel = SentenceTransformer('all-MiniLM-L6-v2')\nconcept_embeddings = [model.encode(c) for c in concept_lists]\n\n\nconcept_embeddings[0].shape\n\n(20, 384)\n\n\n\nembedding_dimension = concept_embeddings[0].shape[1]"
+  },
+  {
+    "objectID": "pilot-results-analysis.html",
+    "href": "pilot-results-analysis.html",
+    "title": "Pilot Results Analysis",
+    "section": "",
+    "text": "from nbdev.showdoc import *\nimport numpy as np\nimport scipy\nimport sklearn\nfrom tqdm.notebook import trange, tqdm\nimport matplotlib.pyplot as plt\n\nThe autoreload extension is already loaded. To reload it, use:\n  %reload_ext autoreload"
+  },
+  {
+    "objectID": "pilot-results-analysis.html#data-import",
+    "href": "pilot-results-analysis.html#data-import",
+    "title": "Pilot Results Analysis",
+    "section": "Data Import",
+    "text": "Data Import\nWe’ll first examine the relationship between the mean score given to each mapping and whether it was human generated."
+  },
+  {
+    "objectID": "pilot-results-analysis.html#the-pearson-correlation-between-the-mean-score-and-ground-truth",
+    "href": "pilot-results-analysis.html#the-pearson-correlation-between-the-mean-score-and-ground-truth",
+    "title": "Pilot Results Analysis",
+    "section": "The Pearson Correlation between the mean score and ground truth",
+    "text": "The Pearson Correlation between the mean score and ground truth\n\nimport scipy.stats\npearson_correlation = scipy.stats.pearsonr(ground_truth, numerical_results)\nprint(f\"{pearson_correlation =}\")\n\npearson_correlation =PearsonRResult(statistic=0.6654383067213117, pvalue=2.8015990134566568e-06)\n\n\n\nimport matplotlib.pyplot as plt\nplt.scatter(ground_truth_textual, numerical_results)\nplt.suptitle(\"Average judgements assigned to real vs. fake metaphors\")\n\nText(0.5, 0.98, 'Average judgements assigned to real vs. fake metaphors')\n\n\n\n\n\nThis plot shows the desired relationship pretty clearly. The audience can tell the difference between the average human generated metaphor and the average random “malaphor”.\nCuriously, there were many human-generated metaphors that scored really low, and a few computer-generated metaphors that scored fairly high – though, on average, no higher than six. Let’s sample some of these to see what happened:\n\nk = 3 # get k lowest ranked real metaphors\nmin_metaphor_idx = np.argpartition(results_on_real, k)[:k]\nfor mm in min_metaphor_idx:\n    print(f\"{metaphor_battery_real[mm]} with score {results_on_real[mm]}\")\n\nSoccer and Nuclear Missiles - How strong is the metaphor? with score 1.14285714285714\nSkyscrapers and Pringles Chips - How strong is the metaphor? with score 2.0\nRestaurants and College Classes - How strong is the metaphor? with score 3.33333333333333\n\n\nThese are admittedly pretty random. I had a specific idea in mind to relate them, but this didn’t translate – or perhaps the audience just wasn’t thinking hard enough!\nWhat are the most well ranked metaphors?\nHere are the best-performing real metaphors:\n\nk = 3\nmax_metaphor_idx = np.argpartition(results_on_real, -k)[-k:]\nfor mm in max_metaphor_idx:\n    print(f\"{metaphor_battery_real[mm]} with score {results_on_real[mm]}\")\n\nWriting a Book and Running a Marathon - How strong is the metaphor? with score 8.4\nTropical Cyclones and Bad Moods - How strong is the metaphor? with score 8.93333333333333\nThe Armed Forces and an Ant Colony - How strong is the metaphor? with score 8.8125\n\n\nAnd here are the best-performing fake metaphors:\n\nk = 3 \nmax_metaphor_idx = np.argpartition(results_on_fake, -k)[-k:]\nfor mm in max_metaphor_idx:\n    print(f\"{metaphor_battery_fake[mm]} with score {results_on_fake[mm]}\")\n\nBaseball Catchers and Journalists - How strong is the metaphor? with score 4.0\nMemory and Television - How strong is the metaphor? with score 4.23529411764706\nThe President and a Film Actor - How strong is the metaphor? with score 6.0\n\n\nThe last one is especially good. The dice sometimes get lucky.\nJust for fun, here are the absolute worst performing metaphors:\n\nk = 5\nmin_metaphor_idx = np.argpartition(numerical_results, k)[:k]\nfor mm in min_metaphor_idx:\n    print(f\"{metaphor_battery[mm]} with score {numerical_results[mm]}\")\n\nAn Elementary School and a Solar Eclipse - How strong is the metaphor? with score 1.52941176470588\nMusical Albums and Sea Urchins - How strong is the metaphor? with score 0.8\nSoccer and Nuclear Missiles - How strong is the metaphor? with score 1.14285714285714\nSkyscrapers and Pringles Chips - How strong is the metaphor? with score 2.0\nDepartment Stores and Soccer Teams - How strong is the metaphor? with score 2.0"
+  },
+  {
+    "objectID": "pilot-results-analysis.html#analysis-on-full-results",
+    "href": "pilot-results-analysis.html#analysis-on-full-results",
+    "title": "Pilot Results Analysis",
+    "section": "Analysis on Full Results",
+    "text": "Analysis on Full Results\n\nimport pandas as pd\n# df = pd.read_csv(\"../survey_results/pilot_results.tsv\", sep = \"\\t\")"
+  }
+]
